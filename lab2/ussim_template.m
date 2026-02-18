@@ -2,7 +2,7 @@ clear all
 close all
 clc
 
-addpath('/Users/thuuyen/School/ZSL/lab2/field_ii_ver_3_30_mac')
+addpath('/Users/thuuyen/School/ZSL/lab2/m_files')
 
 field_init;
 %% first part
@@ -21,15 +21,15 @@ height = 0.005; % TODO element height in meters (m)
 kerf = 0.00002; % TODO spacing between elements in meters (m)
 no_sub_x = 1; % TODO number of subdivisions in x
 no_sub_y = 4; % TODO number of subdivisions in y
-focus = [0 0 0.03]; % TODO coordinates of the fixed focus point [x y z] in meters (m)
+focus = [0 0 0.025]; % TODO coordinates of the fixed focus point [x y z] in meters (m)
 Th = xdc_linear_array (no_elements, width, height, kerf, no_sub_x, no_sub_y, focus);
 
-% 1.2 modelling impulse response
+%% 1.2 modelling impulse response
 
-fc = ; % TODO central frequency
-bw = ; % TODO fractional bandwidth
-bwr = ; % TODO fractional bandwidth reference level
-tpe = ; %  TODO drop in trailing pulse envelope for cutoff time estimation
+fc = 10e6; % TODO central frequency
+bw = 0.5; % TODO fractional bandwidth
+bwr = -6; % TODO fractional bandwidth reference level
+tpe = -40; %  TODO drop in trailing pulse envelope for cutoff time estimation
 tc = gauspuls('cutoff',fc,bw,bwr,tpe);
 t = - tc:1/fs:tc;
 y = gauspuls(t,fc,bw);
@@ -46,36 +46,40 @@ plot(f,fftshift(abs(fft([y zeros(1,512 - length(y))]))))
 xlabel('f [Hz]')
 
 
-% 1.3 acoustic field
+%% 1.3 acoustic field
 
 xdc_impulse(Th,y);
 
-exc = ; % TODO excitation of the elements by Dirac impulse
+pulse = (0:1/100e6:2/7.5e6);
+pulse(1) = 1;
+pulse(2:end) = 0;
+exc = pulse; % TODO excitation of the elements by Dirac impulse
+
 xdc_excitation(Th,exc);
 
-points = []; % TODO define the coordinates of the line going through the fixed focus point from -1 mm to +1 mm by 0.02 mm
+points = [-1:0.02:1; zeros(1,length(-1:0.02:1)); 0.035*ones(1,length(-1:0.02:1))].'; % TODO define the coordinates of the line going through the fixed focus point from -1 mm to +1 mm by 0.02 mm
 [hp, ~] = calc_hp(Th, points);
 
 t = (1:size(hp,1))/fs; 
 x = -1:.02:1;
-
+%{
 figure()
 imagesc(x,t,hp)
 colormap(gray)
 ylabel('Time [s]')
 xlabel('Distance [mm]')
-title({'Time-dependent changes in pressure on a line going through the fixed focus point','(30 mm parallel from the transducer)'})
+title({'Time-dependent changes in pressure on a line going through the fixed focus point','(25 mm parallel from the transducer)'})
 
 figure()
 plot(t,hp(:,51))
 title('Acoustic pressure in the fixed focus point')
 xlabel('Time [s]')
 ylabel('Acoustic pressure [Pa]')
-
+%}
 figure()
 Pm_i = max(abs(hp),[],1);
 plot(x,20*log10(Pm_i/max(Pm_i)))
-title({'Normalized pressure maxima','for a line 30 mm parallel from the tranducer'})
+title({'Normalized pressure maxima','for a line 25 mm parallel from the tranducer'})
 xlabel('Distance [mm]')
 ylabel('Acoustic pressure [dB]')
 axis tight
@@ -88,6 +92,7 @@ axis tight
 
 
 % BONUS apodization
+%{
 
 points = []; TODO 
 xdc_impulse(Th,y);
@@ -112,3 +117,4 @@ axis tight
 
 
 field_end
+%}
